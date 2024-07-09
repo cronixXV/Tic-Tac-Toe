@@ -1,0 +1,48 @@
+{
+  "name": "tic-tac-toe",
+  "version": "1.0.0",
+  "description": "TicTacToe Game",
+  "main": "src/main.ts",
+  "author": "Egor Gruzdev",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "webpack --mode production --node-env=production",
+    "dev": "webpack --mode development --node-env=development",
+    "watch": "webpack --watch --mode development --node-env=development",
+    "serve": "webpack serve --mode development --node-env=development",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "devDependencies": {
+    "@types/webpack-env": "^1.18.5",
+    "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "@typescript-eslint/parser": "^7.16.0",
+    "@webpack-cli/generators": "^3.0.7",
+    "autoprefixer": "^10.4.19",
+    "css-loader": "^7.1.2",
+    "css-minimizer-webpack-plugin": "^7.0.0",
+    "eslint": "^8.54.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-webpack-plugin": "^4.2.0",
+    "html-webpack-plugin": "^5.6.0",
+    "mini-css-extract-plugin": "^2.9.0",
+    "postcss": "^8.4.39",
+    "postcss-loader": "^8.1.1",
+    "prettier": "^3.3.2",
+    "sass": "^1.77.6",
+    "sass-loader": "^14.2.1",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.5.3",
+    "webpack": "^5.92.1",
+    "webpack-bundle-analyzer": "^4.10.2",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4",
+    "workbox-webpack-plugin": "^7.1.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
