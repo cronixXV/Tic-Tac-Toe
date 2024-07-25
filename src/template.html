@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TicTacToe</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div class="statistics">
+      <h3 class="heading">Статистика побед</h3>
+      <div class="statistics__list">
+        <div class="statistics__item" data-player="player">
+          <div class="statistics__title">Игрок</div>
+          <div class="statistics__value">0</div>
+        </div>
+        <div class="statistics__item" data-player="AI">
+          <div class="statistics__title">Компьютер</div>
+          <div class="statistics__value">0</div>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="controls__game">
+          <button id="new-game">Новая игра</button>
+          <button id="clean-statistics">Сброс статистики</button>
+        </div>
+        <div class="controls__gameField">
+          <h4>Размер поля:</h4>
+          <form class="controls__inputs">
+            <label
+              ><input
+                type="radio"
+                name="field-size"
+                value="3"
+                checked
+              />3</label
+            ><label><input type="radio" name="field-size" value="4" />4</label
+            ><label><input type="radio" name="field-size" value="5" />5</label>
+            <input type="submit" value="Изменить" />
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
