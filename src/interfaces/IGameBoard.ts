@@ -1,5 +1,5 @@
 import IGameCell from './IGameCell';
-import { CellsInLine } from './IGame';
+import IGame, { CellsInLine } from './IGame';
 
 interface BoardState {
   columns: IGameCell[][];
@@ -9,10 +9,12 @@ interface BoardState {
 
 export default interface IGameBoard {
   board: HTMLDivElement;
+  boardState: BoardState;
   cells: IGameCell[][];
   cellsInLine: CellsInLine;
   containerElement: HTMLElement;
-  generateCells: (size: CellsInLine) => IGameCell[][];
+  game: IGame;
+  genCells(size: CellsInLine): IGameCell[][];
   handleBoardState: () => BoardState;
   handleMove: (event: MouseEvent) => void;
   render: () => void;

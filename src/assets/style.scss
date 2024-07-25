@@ -1,0 +1,137 @@
+$textColor: rgb(219, 237, 237);
+h1 {
+  text-align: center;
+}
+
+body {
+  background-color: #0b0a0a;
+  color: $textColor;
+}
+
+.app,
+#app {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-board {
+  display: grid;
+  grid-template: repeat(3, 150px) / repeat(3, 150px);
+  border-radius: 1em;
+  border-collapse: collapse;
+
+  .game-cell:first-child {
+	 border-top-left-radius: 1em;
+  }
+
+  .game-cell:last-child {
+	 border-bottom-right-radius: 1em;
+  }
+
+  .game-cell:nth-child(3) {
+	 border-top-right-radius: 1em;
+  }
+
+  .game-cell:nth-child(7) {
+	 border-bottom-left-radius: 1em;
+  }
+
+  &-4,
+  &-5 {
+	 .game-cell:nth-child(3) {
+		border-top-right-radius: 0;
+	 }
+
+	 .game-cell:nth-child(7) {
+		border-bottom-left-radius: 0;
+	 }
+  }
+
+  &-4 {
+	 grid-template: repeat(4, 150px) / repeat(4, 150px);
+
+	 .game-cell:nth-child(4) {
+		border-top-right-radius: 1em;
+	 }
+
+	 .game-cell:nth-child(13) {
+		border-bottom-left-radius: 1em;
+	 }
+  }
+
+  &-5 {
+	 grid-template: repeat(5, 150px) / repeat(5, 150px);
+
+	 .game-cell:nth-child(5) {
+		border-top-right-radius: 1em;
+	 }
+
+	 .game-cell:nth-child(21) {
+		border-bottom-left-radius: 1em;
+	 }
+  }
+}
+
+.game-cell {
+  border: 1px solid $textColor;
+  padding: 1em;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.game-cell.hold {
+  cursor: auto;
+
+  &-x {
+	 content: "X";
+  }
+
+  &-o {
+	 content: "O";
+  }
+}
+
+.statistics {
+  display: flex;
+  align-items: center;
+  flex-flow: column wrap;
+  margin-bottom: 2em;
+
+  &__list {
+	 display: inherit;
+	 gap: 1em;
+  }
+
+  &__item {
+	 display: inherit;
+	 gap: 0.5em;
+  }
+}
+
+.controls {
+  margin-top: 1em;
+
+  &__game,
+  &__gameField {
+	 display: flex;
+	 gap: 1em;
+  }
+
+  &__gameField {
+	 justify-content: center;
+	 margin-top: inherit;
+	 align-items: center;
+  }
+
+  button {
+	 background-color: rgb(163, 247, 247);
+	 border-radius: 1em;
+	 border-color: transparent;
+	 padding: 0.5em 0.7em;
+	 cursor: pointer;
+  }
+}

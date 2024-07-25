@@ -16,7 +16,6 @@ export default interface IGame {
   status: IGameStatus;
   cellsInLine: CellsInLine;
   checkWin(): RoundResult | boolean | 'Draw';
-  checkWinner(state: IGameCell[][]): RoundResult | false;
   startNewGame(): void;
   resetStatistics(): void;
   resizeGameBoard(size: CellsInLine): void;

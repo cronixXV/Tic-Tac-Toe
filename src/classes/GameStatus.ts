@@ -1,4 +1,4 @@
-import { CellStatus } from '../interfaces/IGameCell';
+import IGameCell from '../interfaces/IGameCell';
 import IGameStatus, { PlayerSym } from '../interfaces/IGameStatus';
 
 type GameStats = {
@@ -23,6 +23,9 @@ export default class GameStatus implements IGameStatus {
     this.playerWins = 0;
     this.playerSym = playerSym;
     this.aiSym = aiSym;
+  }
+  getBoardState(): IGameCell[][] {
+    throw new Error('Method not implemented.');
   }
 
   public startGame(): void {

@@ -5,6 +5,7 @@ enum CellStatus {
 }
 
 export default interface IGameCell {
+  setStatistics(empty: CellStatus): unknown;
   domEl: HTMLDivElement;
   xCoordinate: number;
   yCoordinate: number;

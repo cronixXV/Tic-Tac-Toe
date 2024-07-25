@@ -15,6 +15,7 @@
   },
   "keywords": [],
   "devDependencies": {
+    "@types/node": "^20.14.12",
     "@types/webpack-env": "^1.18.5",
     "@typescript-eslint/eslint-plugin": "^7.16.0",
     "@typescript-eslint/parser": "^7.16.0",
