@@ -17,10 +17,34 @@ export default class GameAI implements IGameAI {
     private game: Game,
   ) {
     this.cellsInLine = gameBoard.cellsInLine;
-    this.board = gameBoard.genCells(this.cellsInLine);
+    const flatBoard = this.gameBoard.genCells(this.cellsInLine);
+    this.board = this.convertTo2DArray(flatBoard, this.cellsInLine);
   }
 
+  private convertTo2DArray(
+    flatArray: IGameCell[],
+    cellsInLine: number,
+  ): IGameCell[][] {
+    const board: IGameCell[][] = [];
+    for (let i = 0; i < cellsInLine; i++) {
+      const row: IGameCell[] = [];
+      for (let j = 0; j < cellsInLine; j++) {
+        row.push(flatArray[i * cellsInLine + j]);
+      }
+      board.push(row);
+    }
+    return board;
+  }
+
+  // public printBoard(): void {
+  //   console.log('Currentboardstate:');
+  //   for (const row of this.board) {
+  //     console.log(row.map((cell) => cell.getStatus()).join(' '));
+  //   }
+  // }
+
   public move(): void {
+    console.log('AI is making a move...');
     const bestMoveData = this.getBestMove();
     if (bestMoveData) {
       const bestCell =
@@ -28,6 +52,10 @@ export default class GameAI implements IGameAI {
           Math.floor(bestMoveData.bestSeqForAI.length / 2)
         ];
       bestCell.setStatus(CellStatus.holdO);
+      console.log('AI made a move:', bestCell);
+      // this.printBoard();
+    } else {
+      console.log('No best move found for AI');
     }
   }
 
@@ -47,19 +75,17 @@ export default class GameAI implements IGameAI {
     const columnsState: SequenceData[] = [];
     const diagonalsState: SequenceData[] = [];
 
-    for (let i = 0; i < this.board.length; i++) {
-      const row: IGameCell[] = this.board[i];
-      const column: IGameCell[] = this.board.map((r) => r[i]);
+    const boardState = this.gameBoard.handleBoardState();
+
+    for (let i = 0; i < boardState.rows.length; i++) {
+      const row: IGameCell[] = boardState.rows[i];
+      const column: IGameCell[] = boardState.columns[i];
       rowsState.push(this.getSequenceData(row));
       columnsState.push(this.getSequenceData(column));
     }
 
-    const mainDiagonal: IGameCell[] = [];
-    const antiDiagonal: IGameCell[] = [];
-    for (let i = 0; i < this.board.length; i++) {
-      mainDiagonal.push(this.board[i][i]);
-      antiDiagonal.push(this.board[i][this.board.length - i - 1]);
-    }
+    const mainDiagonal: IGameCell[] = boardState.diagonals[0];
+    const antiDiagonal: IGameCell[] = boardState.diagonals[1];
     diagonalsState.push(this.getSequenceData(mainDiagonal));
     diagonalsState.push(this.getSequenceData(antiDiagonal));
 
@@ -67,6 +93,9 @@ export default class GameAI implements IGameAI {
   }
 
   private getSequenceData(sequence: IGameCell[]): SequenceData {
+    if (!Array.isArray(sequence)) {
+      throw new Error('sequence is not an array');
+    }
     const sequenceAnalysis: SequenceAnalysis = {
       suggestToHold: false,
       hasAiIn: sequence.some((cell) => cell.getStatus() === CellStatus.holdO),
@@ -143,6 +172,7 @@ export default class GameAI implements IGameAI {
   }
 
   private getBestMove(): BestMoveData | null {
+    console.log('Getting best move for AI...');
     const boardAnalysis = this.getBoardAnalysis();
     let bestMoveData: BestMoveData | null = null;
 
@@ -200,6 +230,7 @@ export default class GameAI implements IGameAI {
       }
     }
 
+    console.log('Best move for AI:', bestMoveData);
     return bestMoveData;
   }
 }

@@ -86,6 +86,7 @@ export default class GameBoard implements IGameBoard {
       this.boardState.diagonals[0].push(this.cells[diagonalIdx]);
       this.boardState.diagonals[1].push(this.cells[revDiagonalIdx]);
     }
+    console.log('Board State:', this.boardState);
     return this.boardState;
   }
 
@@ -98,6 +99,7 @@ export default class GameBoard implements IGameBoard {
     }
     return cells;
   }
+
   public handleWin(winState: boolean | 'Draw' | RoundResult) {
     this.game.status.isRunning = !this.game.status.isRunning;
     if (winState == 'Draw') {
@@ -112,6 +114,7 @@ export default class GameBoard implements IGameBoard {
     }
     this.game.setStatistics();
   }
+
   public handleMove(event: MouseEvent): void {
     const cellIndex: number = Array.from(this.board?.childNodes ?? []).indexOf(
       event.target as HTMLElement,
