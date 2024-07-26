@@ -1,5 +1,5 @@
 import { CellsInLine } from '../interfaces/IGame';
-import IGameCell, { CellStatus } from '../interfaces/IGameCell';
+import { CellStatus } from '../interfaces/IGameCell';
 import GameCell from './GameCell';
 import IGame from '../interfaces/IGame';
 import IGameBoard, { BoardState } from '../interfaces/IGameBoard';
@@ -10,7 +10,7 @@ export default class GameBoard implements IGameBoard {
   static NEW_GAME_SELECTOR = '#new-game';
   static CLEAN_STATISTICS_SELECTOR = '#clean-statistics';
   static RESIZE_BOARD_FORM_SELECTOR = '.controls__inputs';
-  public cells: IGameCell[][];
+  public cells: GameCell[];
   public readonly board: HTMLDivElement = document.createElement('div');
   public boardState: BoardState = {
     rows: [],
@@ -67,12 +67,12 @@ export default class GameBoard implements IGameBoard {
     // Формирование строк и столбцов для проверки
     for (let cellIdx in this.cells) {
       // Наполнение массива строк
-      this.boardState.rows[this.cells[cellIdx][0].yCoordinate].push(
-        this.cells[cellIdx][0],
+      this.boardState.rows[this.cells[+cellIdx].yCoord].push(
+        this.cells[+cellIdx],
       );
       // Наполнение массива столбцов
-      this.boardState.columns[this.cells[cellIdx][0].xCoordinate].push(
-        this.cells[cellIdx][0],
+      this.boardState.columns[this.cells[+cellIdx].xCoord].push(
+        this.cells[+cellIdx],
       );
     }
 
@@ -83,22 +83,19 @@ export default class GameBoard implements IGameBoard {
       diagonalIdx = diagonalIdx + shiftFactor,
         revDiagonalIdx = revDiagonalIdx + shiftFactor - 2
     ) {
-      this.boardState.diagonals[0].push(this.cells[diagonalIdx][0]);
-      this.boardState.diagonals[1].push(this.cells[revDiagonalIdx][0]);
+      this.boardState.diagonals[0].push(this.cells[diagonalIdx]);
+      this.boardState.diagonals[1].push(this.cells[revDiagonalIdx]);
     }
     return this.boardState;
   }
 
-  public genCells(size: CellsInLine): IGameCell[][] {
-    const cells: IGameCell[][] = [];
-
-    for (let i = 0; i < size; i++) {
-      cells[i] = [];
-      for (let j = 0; j < size; j++) {
-        cells[i][j] = new GameCell(i, j);
+  public genCells(cellsInLine: number): GameCell[] {
+    const cells: GameCell[] = [];
+    for (let yCoord = 0; yCoord < cellsInLine; yCoord++) {
+      for (let xCoord = 0; xCoord < cellsInLine; xCoord++) {
+        cells.push(new GameCell(xCoord, yCoord));
       }
     }
-
     return cells;
   }
   public handleWin(winState: boolean | 'Draw' | RoundResult) {
@@ -120,11 +117,11 @@ export default class GameBoard implements IGameBoard {
       event.target as HTMLElement,
     );
 
-    if (this.cells[cellIndex][0].getStatus() !== CellStatus.empty) {
+    if (this.cells[cellIndex].getStatus() !== CellStatus.empty) {
       return;
     }
 
-    this.cells[cellIndex][0].setStatus(
+    this.cells[cellIndex].setStatus(
       this.game.player !== 'AI'
         ? this.game.status.playerSym
         : this.game.status.playerSym === CellStatus.holdX
@@ -147,7 +144,7 @@ export default class GameBoard implements IGameBoard {
   }
 
   public newGameListener(): void {
-    this.game.startNewGame();
+    this.game.newGame();
   }
 
   public resetGameStatisticsListener(): void {
@@ -168,7 +165,7 @@ export default class GameBoard implements IGameBoard {
       );
       if (sizeValue === 3 || sizeValue === 4 || sizeValue === 5) {
         this.game.resizeGameBoard(sizeValue);
-        this.game.startNewGame();
+        this.game.newGame();
       }
     }
   }
@@ -195,9 +192,7 @@ export default class GameBoard implements IGameBoard {
     }
     this.cells.forEach((elem) => {
       if (this.board) {
-        elem.forEach((cell) => {
-          this.board.insertAdjacentElement('beforeend', cell.domEl);
-        });
+        this.board.insertAdjacentElement('beforeend', elem.domEl);
       } else {
         alert('Не могу отрисовать игровое поле');
       }

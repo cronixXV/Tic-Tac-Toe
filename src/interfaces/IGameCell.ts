@@ -3,12 +3,10 @@ enum CellStatus {
   holdX = 'X',
   holdO = 'O',
 }
-
 export default interface IGameCell {
-  setStatistics(empty: CellStatus): unknown;
   domEl: HTMLDivElement;
-  xCoordinate: number;
-  yCoordinate: number;
+  xCoord: number;
+  yCoord: number;
   status: CellStatus;
   getStatus(): CellStatus;
   setStatus(sym: CellStatus): void;

@@ -8,9 +8,9 @@
   "private": true,
   "scripts": {
     "build": "webpack --mode production --node-env=production",
-    "dev": "webpack --mode development --node-env=development",
+    "dev": "webpack serve --config webpack.config.js --mode development --node-env=development",
     "watch": "webpack --watch --mode development --node-env=development",
-    "serve": "webpack serve --mode development --node-env=development",
+    "serve": "webpack serve --config webpack.config.js --mode development --node-env=development",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

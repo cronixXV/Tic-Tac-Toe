@@ -22,7 +22,7 @@ const config = {
     path: path.resolve(__dirname, 'dist'),
   },
   devServer: {
-    open: false,
+    open: true,
     host: 'localhost',
     port: 3000,
     hot: true,
@@ -91,5 +91,10 @@ module.exports = () => {
   } else {
     config.mode = 'development';
   }
+
+  if (process.env.ANALYZE) {
+    config.plugins.push(new WebpackBundleAnalyzer());
+  }
+
   return config;
 };

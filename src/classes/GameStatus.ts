@@ -1,64 +1,30 @@
-import IGameCell from '../interfaces/IGameCell';
+import { CellStatus } from '../interfaces/IGameCell';
 import IGameStatus, { PlayerSym } from '../interfaces/IGameStatus';
 
-type GameStats = {
-  aiWins: number;
-  playerWins: number;
-  draws: number;
-};
-
 export default class GameStatus implements IGameStatus {
-  public isRunning: boolean;
+  public isRunning: boolean = false;
   public aiSym: PlayerSym;
-  public aiWins: number;
-  public draws: number;
-  public playerWins: number;
-  public playerSym: PlayerSym;
-
-  constructor(playerSym: PlayerSym, aiSym: PlayerSym) {
-    this.isRunning = false;
-    this.aiSym = aiSym;
-    this.aiWins = 0;
-    this.draws = 0;
-    this.playerWins = 0;
+  public aiWins: number = 0;
+  public draws: number = 0;
+  public playerWins: number = 0;
+  constructor(public playerSym: PlayerSym) {
     this.playerSym = playerSym;
-    this.aiSym = aiSym;
+    this.aiSym = this.setAiSym();
   }
-  getBoardState(): IGameCell[][] {
-    throw new Error('Method not implemented.');
+  setAiSym() {
+    return (this.aiSym =
+      this.playerSym === CellStatus.holdX
+        ? CellStatus.holdO
+        : CellStatus.holdX);
   }
-
-  public startGame(): void {
-    this.isRunning = true;
-  }
-
-  public stopGame(): void {
-    this.isRunning = false;
-  }
-
-  public incrementPlayerWins(): void {
-    this.playerWins++;
-  }
-
-  public incrementAiWins(): void {
-    this.aiWins++;
-  }
-
-  public incrementDraws(): void {
-    this.draws++;
-  }
-
-  public getStats(): GameStats {
-    return {
-      aiWins: this.aiWins,
-      playerWins: this.playerWins,
-      draws: this.draws,
-    };
-  }
-
-  public cleanStatistics(): void {
+  public cleanStatistics() {
     this.playerWins = 0;
     this.aiWins = 0;
     this.draws = 0;
+  }
+  public changePlayerSym() {
+    this.playerSym =
+      this.playerSym === CellStatus.holdX ? CellStatus.holdO : CellStatus.holdX;
+    this.setAiSym();
   }
 }

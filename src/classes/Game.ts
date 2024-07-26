@@ -12,7 +12,6 @@ export default class Game implements IGame {
   public player: Player | null = null;
   public readonly status: IGameStatus;
   public aiPlayer: IGameAI;
-
   constructor(
     private readonly containerElement: HTMLElement,
     public cellsInLine: CellsInLine,
@@ -23,20 +22,15 @@ export default class Game implements IGame {
       this.cellsInLine,
       this,
     );
-    this.status = new GameStatus(playerSym, CellStatus.holdO);
+    this.status = new GameStatus(playerSym);
     this.aiPlayer = new GameAI(this.gameBoard, this);
     this.firstMoveInRound();
-  }
-  startNewGame(): void {
-    throw new Error('Method not implemented.');
   }
 
   public newGame(): void {
     this.gameBoard.containerElement.innerHTML = '';
-    this.gameBoard.cells.forEach((cell: IGameCell[]) => {
-      cell.forEach((c: IGameCell) => {
-        c.resetStatus();
-      });
+    this.gameBoard.cells.forEach((cell) => {
+      cell.resetStatus();
     });
     this.gameBoard.board.removeEventListener(
       'click',
@@ -119,7 +113,7 @@ export default class Game implements IGame {
   }
 
   private checkDraw(): boolean | 'Draw' {
-    return this.hasCollectionsNotEmptySequences([this.gameBoard.cells.flat()])
+    return this.hasCollectionsNotEmptySequences([this.gameBoard.cells])
       ? 'Draw'
       : false;
   }

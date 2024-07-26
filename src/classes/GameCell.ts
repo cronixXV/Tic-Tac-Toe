@@ -2,26 +2,22 @@ import IGameCell, { CellStatus } from '../interfaces/IGameCell';
 
 export default class GameCell implements IGameCell {
   public status: CellStatus = CellStatus.empty;
-  public domEl: HTMLDivElement;
+  public domEl: HTMLDivElement = document.createElement('div');
 
   constructor(
-    public xCoordinate: number,
-    public yCoordinate: number,
+    public xCoord: number,
+    public yCoord: number,
   ) {
-    this.xCoordinate = xCoordinate;
-    this.yCoordinate = yCoordinate;
-    this.domEl = document.createElement('div');
+    this.xCoord = xCoord;
+    this.yCoord = yCoord;
     this.domEl.classList.add('game-cell');
   }
-  setStatistics(empty: CellStatus): unknown {
-    throw new Error('Method not implemented.');
-  }
 
-  public getStatus(): CellStatus {
+  public getStatus() {
     return this.status;
   }
 
-  public setStatus(sym: CellStatus): void {
+  setStatus(sym: CellStatus) {
     if (this.status === CellStatus.empty) {
       this.status = sym;
       this.domEl.classList.add('hold', `hold-${this.status}`);
@@ -29,8 +25,8 @@ export default class GameCell implements IGameCell {
     }
   }
 
-  public resetStatus(): void {
-    if (this.status !== CellStatus.empty) {
+  resetStatus() {
+    if (this.status) {
       this.status = CellStatus.empty;
       this.domEl.classList.remove('hold', `hold-${this.status}`);
       this.domEl.textContent = '';
