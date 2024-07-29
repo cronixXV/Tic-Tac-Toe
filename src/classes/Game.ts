@@ -12,6 +12,8 @@ export default class Game implements IGame {
   public player: Player | null = null;
   public readonly status: IGameStatus;
   public aiPlayer: IGameAI;
+  private currentPlayer: Player = 'Player';
+
   constructor(
     private readonly containerElement: HTMLElement,
     public cellsInLine: CellsInLine,
@@ -27,6 +29,10 @@ export default class Game implements IGame {
     this.firstMoveInRound();
   }
 
+  public isPlayer(): boolean {
+    return this.player === 'Player';
+  }
+
   public newGame(): void {
     this.gameBoard.containerElement.innerHTML = '';
     this.gameBoard.cells.forEach((cell) => {
@@ -37,19 +43,32 @@ export default class Game implements IGame {
       this.gameBoard.handleMove,
     );
     this.status.isRunning = true;
+    this.status.cleanStatistics(); // Сброс статистики
     this.gameBoard.render();
-    if (this.player === 'AI') {
-      this.player = this.player === 'AI' ? 'Player' : 'AI';
-      this.aiPlayer.move();
-      this.gameBoard.handleBoardState();
+    this.firstMoveInRound();
+  }
+
+  public handleMove(cell: IGameCell): void {
+    if (this.getCurrentPlayer() === this.player) {
+      cell.setStatus(CellStatus.holdX);
+      this.setCurrentPlayer('AI');
+      const result = this.checkWin();
+      if (result === false) {
+        console.log('AI should make a move now.');
+        this.aiPlayer.move();
+      } else {
+        this.handleGameResult(result);
+      }
     }
   }
+
   public resizeGameBoard(size: CellsInLine) {
     this.cellsInLine = size;
     this.gameBoard.cellsInLine = this.cellsInLine;
     this.gameBoard.cells = this.gameBoard.genCells(size);
     this.gameBoard.render();
   }
+
   public setStatistics() {
     const PLAYER_SELECTOR = '[data-player="player"] > .statistics__value';
     const AI_SELECTOR = '[data-player="AI"] > .statistics__value';
@@ -62,6 +81,7 @@ export default class Game implements IGame {
       aiStatElem.innerHTML = (this.status.aiWins as Number).toString();
     }
   }
+
   public resetStatistics(): void {
     const playerStatElem = document.querySelector(
       '[data-player="player"] > .statistics__value',
@@ -124,10 +144,47 @@ export default class Game implements IGame {
     const winByColumns = this.checkVertical(boardState.columns);
     const winByDiagonals = this.checkDiagonal(boardState.diagonals);
     const isDraw = this.checkDraw();
-    return winByRows || winByColumns || winByDiagonals || isDraw;
+    if (winByRows || winByColumns || winByDiagonals) {
+      return winByRows || winByColumns || winByDiagonals;
+    } else if (isDraw) {
+      return 'Draw';
+    } else {
+      return false;
+    }
   }
 
   public firstMoveInRound(): void {
     this.player = Math.random() < 0.5 ? 'AI' : 'Player';
+    console.log('Первый ход в раунде:', this.player);
+    this.currentPlayer = this.player;
+    if (this.player === 'AI') {
+      this.aiPlayer.move();
+    }
+  }
+
+  public handleGameResult(result: RoundResult | boolean | 'Draw'): void {
+    if (result === 'Draw') {
+      console.log('Draw!');
+      // Обработка ничьей
+    } else if (result && typeof result === 'object' && 'winner' in result) {
+      console.log(`${result.winner} wins!`);
+      // Обработка победы
+      if (result.winner === 'Player') {
+        this.status.playerWins++;
+      } else if (result.winner === 'AI') {
+        this.status.aiWins++;
+      }
+      this.setStatistics();
+    }
+    this.status.isRunning = false;
+    this.newGame(); // Начать новую игру
+  }
+
+  public getCurrentPlayer(): Player {
+    return this.currentPlayer;
+  }
+
+  public setCurrentPlayer(player: Player): void {
+    this.currentPlayer = player;
   }
 }

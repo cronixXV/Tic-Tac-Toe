@@ -42,7 +42,6 @@ export default class GameAI implements IGameAI {
   //     console.log(row.map((cell) => cell.getStatus()).join(' '));
   //   }
   // }
-
   public move(): void {
     console.log('AI is making a move...');
     const bestMoveData = this.getBestMove();
@@ -53,9 +52,29 @@ export default class GameAI implements IGameAI {
         ];
       bestCell.setStatus(CellStatus.holdO);
       console.log('AI made a move:', bestCell);
-      // this.printBoard();
+      // После хода AI нужно снова проверить победу и сменить текущего игрока
+      const gameResult = this.game.checkWin();
+      if (gameResult === false) {
+        this.game.setCurrentPlayer('Player');
+      } else {
+        this.game.handleGameResult(gameResult);
+      }
     } else {
       console.log('No best move found for AI');
+      const randomCell = this.getRandomEmptyCell();
+      if (randomCell && typeof randomCell !== 'boolean') {
+        randomCell.setStatus(CellStatus.holdO);
+        console.log('AI made a random move:', randomCell);
+        // После хода AI нужно снова проверить победу и сменить текущего игрока
+        const gameResult = this.game.checkWin();
+        if (gameResult === false) {
+          this.game.setCurrentPlayer('Player');
+        } else {
+          this.game.handleGameResult(gameResult);
+        }
+      } else {
+        console.log('No empty cells found for AI to make a move');
+      }
     }
   }
 
@@ -63,13 +82,16 @@ export default class GameAI implements IGameAI {
     const emptyCells = this.board
       .flat()
       .filter((cell) => cell.getStatus() === CellStatus.empty);
+    console.log('Empty cells found:', emptyCells);
     if (!emptyCells.length) {
+      console.log('No empty cells found');
       return false;
     }
     const randomIndex = Math.floor(Math.random() * emptyCells.length);
-    return emptyCells[randomIndex];
+    const randomCell = emptyCells[randomIndex];
+    console.log('Random empty cell selected:', randomCell);
+    return randomCell;
   }
-
   private getBoardAnalysis(): BoardAnalysis {
     const rowsState: SequenceData[] = [];
     const columnsState: SequenceData[] = [];
@@ -88,6 +110,8 @@ export default class GameAI implements IGameAI {
     const antiDiagonal: IGameCell[] = boardState.diagonals[1];
     diagonalsState.push(this.getSequenceData(mainDiagonal));
     diagonalsState.push(this.getSequenceData(antiDiagonal));
+
+    console.log('Board analysis:', { rowsState, columnsState, diagonalsState });
 
     return { rowsState, columnsState, diagonalsState };
   }
@@ -110,43 +134,14 @@ export default class GameAI implements IGameAI {
     const seqEmptyCells: IGameCell[] = [];
     const seqPlayerCells: IGameCell[] = [];
 
-    let currentSeq: IGameCell[] = [];
-    let currentSeqType: 'ai' | 'empty' | 'player' = 'empty';
-
     for (const cell of sequence) {
       if (cell.getStatus() === CellStatus.empty) {
-        if (currentSeqType === 'empty') {
-          currentSeq.push(cell);
-        } else {
-          seqEmptyCells.push(...currentSeq);
-          currentSeq = [cell];
-          currentSeqType = 'empty';
-        }
+        seqEmptyCells.push(cell);
       } else if (cell.getStatus() === CellStatus.holdO) {
-        if (currentSeqType === 'ai') {
-          currentSeq.push(cell);
-        } else {
-          seqAiCells.push(...currentSeq);
-          currentSeq = [cell];
-          currentSeqType = 'ai';
-        }
+        seqAiCells.push(cell);
       } else {
-        if (currentSeqType === 'player') {
-          currentSeq.push(cell);
-        } else {
-          seqPlayerCells.push(...currentSeq);
-          currentSeq = [cell];
-          currentSeqType = 'player';
-        }
+        seqPlayerCells.push(cell);
       }
-    }
-
-    if (currentSeqType === 'ai') {
-      seqAiCells.push(...currentSeq);
-    } else if (currentSeqType === 'player') {
-      seqPlayerCells.push(...currentSeq);
-    } else {
-      seqEmptyCells.push(...currentSeq);
     }
 
     if (seqAiCells.length === 2 && seqEmptyCells.length === 1) {
@@ -160,6 +155,13 @@ export default class GameAI implements IGameAI {
     } else if (seqPlayerCells.length === 1 && seqEmptyCells.length === 2) {
       sequenceAnalysis.movesPlayerToWin = 2;
     }
+
+    console.log('Sequence analysis:', sequenceAnalysis);
+    console.log('Sequence cells:', {
+      seqAiCells,
+      seqEmptyCells,
+      seqPlayerCells,
+    });
 
     return {
       metaData: sequenceAnalysis,
@@ -185,35 +187,45 @@ export default class GameAI implements IGameAI {
             bestStepsCountToWinPlayer: 0,
             bestSeqForPlayer: [],
           };
+          console.log('Best move found in row:', bestMoveData);
+          break; // Если нашли лучший ход, можно прекратить поиск
         }
       }
     }
 
-    for (const columnState of boardAnalysis.columnsState) {
-      if (columnState.metaData?.suggestToHold) {
-        if (
-          columnState.metaData &&
-          columnState.metaData.movesAIToWin !== undefined
-        ) {
-          bestMoveData = {
-            bestStepsCountToWinAI: columnState.metaData.movesAIToWin,
-            bestSeqForAI: columnState.seq?.seqEmptyCells || [],
-            bestStepsCountToWinPlayer: 0,
-            bestSeqForPlayer: [],
-          };
+    if (!bestMoveData) {
+      for (const columnState of boardAnalysis.columnsState) {
+        if (columnState.metaData?.suggestToHold) {
+          if (
+            columnState.metaData &&
+            columnState.metaData.movesAIToWin !== undefined
+          ) {
+            bestMoveData = {
+              bestStepsCountToWinAI: columnState.metaData.movesAIToWin,
+              bestSeqForAI: columnState.seq?.seqEmptyCells || [],
+              bestStepsCountToWinPlayer: 0,
+              bestSeqForPlayer: [],
+            };
+            console.log('Best move found in column:', bestMoveData);
+            break; // Если нашли лучший ход, можно прекратить поиск
+          }
         }
       }
     }
 
-    for (const diagonalState of boardAnalysis.diagonalsState) {
-      if (diagonalState.metaData?.suggestToHold) {
-        if (diagonalState.metaData?.movesAIToWin) {
-          bestMoveData = {
-            bestStepsCountToWinAI: diagonalState.metaData.movesAIToWin,
-            bestSeqForAI: diagonalState.seq?.seqEmptyCells || [],
-            bestStepsCountToWinPlayer: 0,
-            bestSeqForPlayer: [],
-          };
+    if (!bestMoveData) {
+      for (const diagonalState of boardAnalysis.diagonalsState) {
+        if (diagonalState.metaData?.suggestToHold) {
+          if (diagonalState.metaData?.movesAIToWin) {
+            bestMoveData = {
+              bestStepsCountToWinAI: diagonalState.metaData.movesAIToWin,
+              bestSeqForAI: diagonalState.seq?.seqEmptyCells || [],
+              bestStepsCountToWinPlayer: 0,
+              bestSeqForPlayer: [],
+            };
+            console.log('Best move found in diagonal:', bestMoveData);
+            break; // Если нашли лучший ход, можно прекратить поиск
+          }
         }
       }
     }
@@ -227,6 +239,9 @@ export default class GameAI implements IGameAI {
           bestStepsCountToWinPlayer: 0,
           bestSeqForPlayer: [],
         };
+        console.log('Random move selected:', bestMoveData);
+      } else {
+        console.log('No best move found for AI');
       }
     }
 
