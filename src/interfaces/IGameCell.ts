@@ -3,6 +3,7 @@ enum CellStatus {
   holdX = 'X',
   holdO = 'O',
 }
+
 export default interface IGameCell {
   domEl: HTMLDivElement;
   xCoord: number;

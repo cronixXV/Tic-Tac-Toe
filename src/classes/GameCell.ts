@@ -11,6 +11,8 @@ export default class GameCell implements IGameCell {
     this.xCoord = xCoord;
     this.yCoord = yCoord;
     this.domEl.classList.add('game-cell');
+    this.domEl.dataset.x = String(xCoord);
+    this.domEl.dataset.y = String(yCoord);
   }
 
   public getStatus() {
@@ -35,5 +37,16 @@ export default class GameCell implements IGameCell {
       this.domEl.classList.remove('hold', `hold-${this.status}`);
       this.domEl.textContent = '';
     }
+  }
+
+  public getCoordinates(): { x: number; y: number } {
+    return {
+      x: Number(this.domEl.dataset.x),
+      y: Number(this.domEl.dataset.y),
+    };
+  }
+
+  public setValue(value: string) {
+    this.domEl.textContent = value;
   }
 }

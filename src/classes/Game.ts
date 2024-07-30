@@ -1,6 +1,6 @@
 import IGameCell, { CellStatus } from '../interfaces/IGameCell';
 import IGame, { CellsInLine, Player, RoundResult } from '../interfaces/IGame';
-import GameBoard from './GameBoard';
+import GameBoard, { PlayerCell } from './GameBoard';
 import GameStatus from './GameStatus';
 import IGameBoard from '../interfaces/IGameBoard';
 import IGameStatus, { PlayerSym } from '../interfaces/IGameStatus';
@@ -95,62 +95,122 @@ export default class Game implements IGame {
     (aiStatElem as HTMLElement).innerHTML = `${this.status.aiWins}`;
   }
 
-  private checkWinner(state: IGameCell[][]): RoundResult | false {
+  private checkWinner(state: PlayerCell[][]): RoundResult | false {
     for (let sequenceIdx in state) {
-      let checkValue = state[sequenceIdx][0].getStatus();
+      let checkValue = state[sequenceIdx][0];
+      const convertedCheckValue = this.convertToCellStatus(checkValue);
       if (
-        checkValue !== CellStatus.empty &&
-        state[sequenceIdx].every((cell) => cell.getStatus() === checkValue)
+        convertedCheckValue !== CellStatus.empty &&
+        state[sequenceIdx].every(
+          (cell) => this.convertToCellStatus(cell) === convertedCheckValue,
+        )
       ) {
+        const winCells: IGameCell[] = state[sequenceIdx].map((cell, index) => ({
+          domEl: document.createElement('div'), // Пример, замените на реальный элемент
+          xCoord: index,
+          yCoord: parseInt(sequenceIdx),
+          status: this.convertToCellStatus(cell),
+          getStatus: () => this.convertToCellStatus(cell),
+          setStatus: (newStatus: CellStatus) => {
+            // Логика установки статуса
+          },
+          resetStatus: () => {
+            // Логика сброса статуса
+          },
+        }));
         return {
-          winner: this.status.playerSym === checkValue ? 'Player' : 'AI',
-          winCells: state[sequenceIdx],
+          winner:
+            this.status.playerSym === convertedCheckValue ? 'Player' : 'AI',
+          winCells: winCells,
         };
       }
     }
     return false;
   }
 
-  private hasCollectionsNotEmptySequences(state: IGameCell[][]): boolean {
+  private convertToCellStatus(cell: PlayerCell): CellStatus {
+    switch (cell) {
+      case 'X':
+        return CellStatus.holdX;
+      case 'O':
+        return CellStatus.holdO;
+      default:
+        return CellStatus.empty;
+    }
+  }
+
+  private hasCollectionsNotEmptySequences(state: PlayerCell[][]): boolean {
     return state.some((cells) =>
-      cells.every((cell) => cell.getStatus() !== CellStatus.empty),
+      cells.every(
+        (cell) => this.convertToCellStatus(cell) !== CellStatus.empty,
+      ),
     );
   }
 
-  private checkHorizontal(state: IGameCell[][]): RoundResult | false {
-    const hasNoEmptyRows = this.hasCollectionsNotEmptySequences(state);
-    return hasNoEmptyRows ? this.checkWinner(state) : false;
+  private checkHorizontal(board: PlayerCell[][]): RoundResult | false {
+    return this.checkWinner(board);
   }
 
-  private checkVertical(state: IGameCell[][]): RoundResult | false {
-    const hasNoEmptyColumns = this.hasCollectionsNotEmptySequences(state);
-    return hasNoEmptyColumns ? this.checkWinner(state) : false;
+  private checkVertical(board: PlayerCell[][]): RoundResult | false {
+    const columns: PlayerCell[][] = Array(board.length)
+      .fill(null)
+      .map(() => Array(board.length).fill(null));
+
+    for (let i = 0; i < board.length; i++) {
+      for (let j = 0; j < board.length; j++) {
+        columns[j][i] = board[i][j];
+      }
+    }
+
+    return this.checkWinner(columns);
   }
 
-  private checkDiagonal(state: IGameCell[][]): RoundResult | false {
-    const hasNoEmptyDiagonals = this.hasCollectionsNotEmptySequences(state);
-    return hasNoEmptyDiagonals ? this.checkWinner(state) : false;
+  private checkDiagonal(board: PlayerCell[][]): RoundResult | false {
+    const mainDiagonal: PlayerCell[] = [];
+    const antiDiagonal: PlayerCell[] = [];
+
+    for (let i = 0; i < board.length; i++) {
+      mainDiagonal.push(board[i][i]);
+      antiDiagonal.push(board[i][board.length - 1 - i]);
+    }
+
+    const diagonals: PlayerCell[][] = [mainDiagonal, antiDiagonal];
+    return this.checkWinner(diagonals);
   }
 
-  private checkDraw(): boolean | 'Draw' {
-    return this.hasCollectionsNotEmptySequences([this.gameBoard.cells])
-      ? 'Draw'
-      : false;
+  private checkDraw(board: PlayerCell[][]): boolean | 'Draw' {
+    return this.hasCollectionsNotEmptySequences(board) ? 'Draw' : false;
   }
 
   public checkWin(): RoundResult | boolean | 'Draw' {
     const boardState = this.gameBoard.handleBoardState();
-    const winByRows = this.checkHorizontal(boardState.rows);
-    const winByColumns = this.checkVertical(boardState.columns);
-    const winByDiagonals = this.checkDiagonal(boardState.diagonals);
-    const isDraw = this.checkDraw();
-    if (winByRows || winByColumns || winByDiagonals) {
-      return winByRows || winByColumns || winByDiagonals;
-    } else if (isDraw) {
-      return 'Draw';
-    } else {
-      return false;
+    const board = boardState.board;
+
+    // Проверка строк
+    const winByRows = this.checkHorizontal(board);
+    if (winByRows) {
+      return winByRows;
     }
+
+    // Проверка столбцов
+    const winByColumns = this.checkVertical(board);
+    if (winByColumns) {
+      return winByColumns;
+    }
+
+    // Проверка диагоналей
+    const winByDiagonals = this.checkDiagonal(board);
+    if (winByDiagonals) {
+      return winByDiagonals;
+    }
+
+    // Проверка на ничью
+    const isDraw = this.checkDraw(board);
+    if (isDraw) {
+      return 'Draw';
+    }
+
+    return false;
   }
 
   public firstMoveInRound(): void {

@@ -8,6 +8,7 @@ import IGameAI, {
 import IGameBoard from '../interfaces/IGameBoard';
 import Game from './Game';
 import { CellsInLine } from '../interfaces/IGame';
+import { PlayerCell } from './GameBoard';
 
 export default class GameAI implements IGameAI {
   private board: IGameCell[][];
@@ -92,22 +93,77 @@ export default class GameAI implements IGameAI {
     console.log('Random empty cell selected:', randomCell);
     return randomCell;
   }
+
   private getBoardAnalysis(): BoardAnalysis {
     const rowsState: SequenceData[] = [];
     const columnsState: SequenceData[] = [];
     const diagonalsState: SequenceData[] = [];
 
     const boardState = this.gameBoard.handleBoardState();
+    const board = boardState.board;
 
-    for (let i = 0; i < boardState.rows.length; i++) {
-      const row: IGameCell[] = boardState.rows[i];
-      const column: IGameCell[] = boardState.columns[i];
+    // Функция для преобразования PlayerCell в CellStatus
+    const convertToCellStatus = (cell: PlayerCell): CellStatus => {
+      switch (cell) {
+        case 'X':
+          return CellStatus.holdX;
+        case 'O':
+          return CellStatus.holdO;
+        default:
+          return CellStatus.empty;
+      }
+    };
+
+    // Функция для создания объекта IGameCell
+    const createGameCell = (
+      x: number,
+      y: number,
+      status: CellStatus,
+    ): IGameCell => {
+      return {
+        domEl: document.createElement('div'),
+        xCoord: x,
+        yCoord: y,
+        status: status,
+        getStatus: () => status,
+        setStatus: (newStatus: CellStatus) => {
+          status = newStatus;
+        },
+        resetStatus: () => {
+          status = CellStatus.empty;
+        },
+      };
+    };
+
+    // Проверка строк
+    for (let i = 0; i < board.length; i++) {
+      const row: IGameCell[] = board[i].map((cell, x) =>
+        createGameCell(x, i, convertToCellStatus(cell)),
+      );
       rowsState.push(this.getSequenceData(row));
+    }
+
+    // Проверка столбцов
+    for (let i = 0; i < board.length; i++) {
+      const column: IGameCell[] = board.map((row, y) =>
+        createGameCell(i, y, convertToCellStatus(row[i])),
+      );
       columnsState.push(this.getSequenceData(column));
     }
 
-    const mainDiagonal: IGameCell[] = boardState.diagonals[0];
-    const antiDiagonal: IGameCell[] = boardState.diagonals[1];
+    // Проверка диагоналей
+    const mainDiagonal: IGameCell[] = [];
+    const antiDiagonal: IGameCell[] = [];
+    for (let i = 0; i < board.length; i++) {
+      mainDiagonal.push(createGameCell(i, i, convertToCellStatus(board[i][i])));
+      antiDiagonal.push(
+        createGameCell(
+          i,
+          board.length - 1 - i,
+          convertToCellStatus(board[i][board.length - 1 - i]),
+        ),
+      );
+    }
     diagonalsState.push(this.getSequenceData(mainDiagonal));
     diagonalsState.push(this.getSequenceData(antiDiagonal));
 
