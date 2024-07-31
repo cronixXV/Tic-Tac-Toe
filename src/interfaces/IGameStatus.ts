@@ -1,6 +1,5 @@
 import { CellStatus } from './IGameCell';
-export type Player = 'Player' | 'AI';
-export type PlayerSym = CellStatus.holdX | CellStatus.holdO;
+type PlayerSym = CellStatus.holdX | CellStatus.holdO;
 export default interface IGameStatus {
   isRunning: boolean;
   playerSym: PlayerSym;

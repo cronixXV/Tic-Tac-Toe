@@ -1,80 +1,78 @@
-import IGameAI from '../interfaces/IGameAI';
-import IGameCell from '../interfaces/IGameCell';
-import IGameStatus from '../interfaces/IGameStatus';
-import GameBoard, { BoardState } from './GameBoard';
+import IGameCell, { CellStatus } from '../interfaces/IGameCell';
+import IGame, { CellsInLine, Player, RoundResult } from '../interfaces/IGame';
+import GameBoard from './GameBoard';
 import GameStatus from './GameStatus';
-import { CellStatus } from '../interfaces/IGameCell';
-import { PlayerSym } from '../interfaces/IGameStatus';
-import { CellsInLine } from '../interfaces/IGame';
-import IGame from '../interfaces/IGame';
-import { Player } from '../interfaces/IGameStatus';
+import IGameBoard from '../interfaces/IGameBoard';
+import IGameStatus, { PlayerSym } from '../interfaces/IGameStatus';
+import IGameAI from '../interfaces/IGameAI';
+import GameAI from './GameAI';
 
 export default class Game implements IGame {
-  aiPlayer: IGameAI;
-  player: Player | null = null;
-  status: IGameStatus;
-  gameBoard: GameBoard;
-  aiSym: PlayerSym;
-
+  private gameBoard: IGameBoard;
+  public player: Player | null = null;
+  public readonly status: IGameStatus;
+  public aiPlayer: IGameAI;
   constructor(
-    containerElement: HTMLElement,
-    cellsInLine: CellsInLine,
-    playerSym: PlayerSym = CellStatus.holdX,
+    private readonly containerElement: HTMLElement,
+    public cellsInLine: CellsInLine,
+    public readonly playerSym: PlayerSym = CellStatus.holdX,
   ) {
-    this.gameBoard = new GameBoard(containerElement, cellsInLine);
-    this.status = new GameStatus(playerSym, CellStatus.holdO);
-    this.aiSym = CellStatus.holdO;
-    this.aiPlayer = new IGameAI(this.gameBoard, this);
-    this.setStatistics();
+    this.gameBoard = new GameBoard(
+      this.containerElement,
+      this.cellsInLine,
+      this,
+    );
+    this.status = new GameStatus(playerSym);
+    this.aiPlayer = new GameAI(this.gameBoard, this);
     this.firstMoveInRound();
   }
 
   public newGame(): void {
-    this.gameBoard.reset();
-    this.status.startGame();
-    this.status.cleanStatistics();
-    this.setStatistics();
-
-    if (this.status.aiSym === this.status.playerSym) {
-      this.status.playerSym =
-        this.status.playerSym === CellStatus.holdX
-          ? CellStatus.holdO
-          : CellStatus.holdX;
-      this.checkGameStatus();
+    this.gameBoard.containerElement.innerHTML = '';
+    this.gameBoard.cells.forEach((cell) => {
+      cell.resetStatus();
+    });
+    this.gameBoard.board.removeEventListener(
+      'click',
+      this.gameBoard.handleMove,
+    );
+    this.status.isRunning = true;
+    this.gameBoard.render();
+    if (this.player === 'AI') {
+      this.player = this.player === 'AI' ? 'Player' : 'AI';
+      this.aiPlayer.move();
+      this.gameBoard.handleBoardState();
     }
   }
-
-  public resizeGameBoard(size: CellsInLine): void {
-    this.gameBoard.resize(size);
+  public resizeGameBoard(size: CellsInLine) {
+    this.cellsInLine = size;
+    this.gameBoard.cellsInLine = this.cellsInLine;
+    this.gameBoard.cells = this.gameBoard.genCells(size);
+    this.gameBoard.render();
   }
-
-  public setStatistics(): void {
+  public setStatistics() {
     const PLAYER_SELECTOR = '[data-player="player"] > .statistics__value';
     const AI_SELECTOR = '[data-player="AI"] > .statistics__value';
-    const playerStatElem = document.querySelector(
-      PLAYER_SELECTOR,
-    ) as HTMLElement;
-    const aiStatElem = document.querySelector(AI_SELECTOR) as HTMLElement;
-
+    const playerStatElem = document.querySelector(`${PLAYER_SELECTOR}`);
+    const aiStatElem = document.querySelector(`${AI_SELECTOR}`);
     if (playerStatElem !== null) {
-      playerStatElem.innerHTML = this.status.playerWins.toString();
+      playerStatElem.innerHTML = (this.status.playerWins as Number).toString();
     }
     if (aiStatElem !== null) {
-      aiStatElem.innerHTML = this.status.aiWins.toString();
+      aiStatElem.innerHTML = (this.status.aiWins as Number).toString();
     }
   }
-
   public resetStatistics(): void {
     const playerStatElem = document.querySelector(
       '[data-player="player"] > .statistics__value',
-    ) as HTMLElement;
+    );
     const aiStatElem = document.querySelector(
       '[data-player="AI"] > .statistics__value',
-    ) as HTMLElement;
+    );
 
     this.status.cleanStatistics();
-    playerStatElem.innerHTML = this.status.playerWins.toString();
-    aiStatElem.innerHTML = this.status.aiWins.toString();
+    (playerStatElem as HTMLElement).innerHTML = `${this.status.playerWins}`;
+    (aiStatElem as HTMLElement).innerHTML = `${this.status.aiWins}`;
   }
 
   private checkWinner(state: IGameCell[][]): RoundResult | false {
@@ -105,74 +103,31 @@ export default class Game implements IGame {
   }
 
   private checkVertical(state: IGameCell[][]): RoundResult | false {
-    const transposedState = state[0].map((_, colIndex) =>
-      state.map((row) => row[colIndex]),
-    );
-    const hasNoEmptyColumns =
-      this.hasCollectionsNotEmptySequences(transposedState);
-    return hasNoEmptyColumns ? this.checkWinner(transposedState) : false;
+    const hasNoEmptyColumns = this.hasCollectionsNotEmptySequences(state);
+    return hasNoEmptyColumns ? this.checkWinner(state) : false;
   }
 
   private checkDiagonal(state: IGameCell[][]): RoundResult | false {
-    const leftDiagonal = state.map((row, index) => row[index]);
-    const rightDiagonal = state.map(
-      (row, index) => row[state.length - 1 - index],
-    );
-    const diagonals = [leftDiagonal, rightDiagonal];
-
-    const hasNoEmptyDiagonals = this.hasCollectionsNotEmptySequences(diagonals);
-    return hasNoEmptyDiagonals ? this.checkWinner(diagonals) : false;
+    const hasNoEmptyDiagonals = this.hasCollectionsNotEmptySequences(state);
+    return hasNoEmptyDiagonals ? this.checkWinner(state) : false;
   }
 
   private checkDraw(): boolean | 'Draw' {
-    const allCells = this.gameBoard.cells.flat();
-    const hasEmptyCell = allCells.some(
-      (cell) => cell.getStatus() === CellStatus.empty,
-    );
-    return hasEmptyCell ? false : 'Draw';
+    return this.hasCollectionsNotEmptySequences([this.gameBoard.cells])
+      ? 'Draw'
+      : false;
   }
 
-  private checkGameStatus(): void {
+  public checkWin(): RoundResult | boolean | 'Draw' {
     const boardState = this.gameBoard.handleBoardState();
     const winByRows = this.checkHorizontal(boardState.rows);
     const winByColumns = this.checkVertical(boardState.columns);
     const winByDiagonals = this.checkDiagonal(boardState.diagonals);
     const isDraw = this.checkDraw();
-
-    if (winByRows) {
-      this.status.updateStatistics(winByRows.winner);
-      this.status.endGame(winByRows.winner);
-      winByRows.winCells.forEach((cell) => cell.setWin());
-      return;
-    }
-    if (winByColumns) {
-      this.status.updateStatistics(winByColumns.winner);
-      this.status.endGame(winByColumns.winner);
-      winByColumns.winCells.forEach((cell) => cell.setWin());
-      return;
-    }
-    if (winByDiagonals) {
-      this.status.updateStatistics(winByDiagonals.winner);
-      this.status.endGame(winByDiagonals.winner);
-      winByDiagonals.winCells.forEach((cell) => cell.setWin());
-      return;
-    }
-    if (isDraw) {
-      this.status.endGame('Draw');
-      return;
-    }
-
-    this.status.nextRound();
-    this.firstMoveInRound();
+    return winByRows || winByColumns || winByDiagonals || isDraw;
   }
 
-  private firstMoveInRound(): void {
-    this.status.playerSym =
-      Math.random() < 0.5 ? CellStatus.holdX : CellStatus.holdO;
-    this.status.aiSym =
-      this.status.playerSym === CellStatus.holdX
-        ? CellStatus.holdO
-        : CellStatus.holdX;
-    this.player = this.status.playerSym === this.status.aiSym ? 'AI' : 'Player';
+  public firstMoveInRound(): void {
+    this.player = Math.random() < 0.5 ? 'AI' : 'Player';
   }
 }

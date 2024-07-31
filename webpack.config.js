@@ -3,9 +3,10 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const WorkboxWebpackPlugin = require('workbox-webpack-plugin');
 const ESLintWebpackPlugin = require('eslint-webpack-plugin');
-const WebpackBundleAnalyzer =
-  require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+const WebpackBundleAnalyzer = require('webpack-bundle-analyzer')[
+  'BundleAnalyzerPlugin'
+];
 
 require('dotenv').config();
 
@@ -22,7 +23,7 @@ const config = {
     path: path.resolve(__dirname, 'dist'),
   },
   devServer: {
-    open: false,
+    open: true,
     host: 'localhost',
     port: 3000,
     hot: true,
@@ -38,9 +39,7 @@ const config = {
       filename: 'index.html',
       title: 'TicTacToe Game',
     }),
-
     new ESLintWebpackPlugin(),
-    new WebpackBundleAnalyzer(),
   ],
   module: {
     rules: [
@@ -75,7 +74,6 @@ const config = {
       chunks: 'all',
       minSize: 20000,
     },
-
     minimize: true,
     minimizer: [new CssMinimizerPlugin()],
   },
@@ -90,6 +88,10 @@ module.exports = () => {
     config.plugins.push(new WorkboxWebpackPlugin.GenerateSW());
   } else {
     config.mode = 'development';
+  }
+
+  if (process.env.ANALYZE) {
+    config.plugins.push(new WebpackBundleAnalyzer());
   }
   return config;
 };

@@ -1,7 +1,6 @@
 import IGameAI from './IGameAI';
 import IGameCell from './IGameCell';
 import IGameStatus from './IGameStatus';
-
 type CellsInLine = 3 | 4 | 5;
 type Player = 'Player' | 'AI';
 
@@ -16,12 +15,11 @@ export default interface IGame {
   status: IGameStatus;
   cellsInLine: CellsInLine;
   checkWin(): RoundResult | boolean | 'Draw';
-  checkWinner(state: IGameCell[][]): RoundResult | false;
-  startNewGame(): void;
-  resetStatistics(): void;
-  resizeGameBoard(size: CellsInLine): void;
-  setStatistics(): void;
-  firstMoveInRound(): void;
+  newGame: () => void;
+  resetStatistics: () => void;
+  resizeGameBoard: (size: CellsInLine) => void;
+  setStatistics: () => void;
+  firstMoveInRound: () => void;
 }
 
 export type { RoundResult, CellsInLine, Player };

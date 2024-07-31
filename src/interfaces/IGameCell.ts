@@ -6,8 +6,8 @@ enum CellStatus {
 
 export default interface IGameCell {
   domEl: HTMLDivElement;
-  xCoordinate: number;
-  yCoordinate: number;
+  xCoord: number;
+  yCoord: number;
   status: CellStatus;
   getStatus(): CellStatus;
   setStatus(sym: CellStatus): void;

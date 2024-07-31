@@ -1,21 +1,21 @@
+import IGame, { CellsInLine } from './IGame';
 import IGameCell from './IGameCell';
-import { CellsInLine } from './IGame';
 
 interface BoardState {
   columns: IGameCell[][];
   diagonals: IGameCell[][];
   rows: IGameCell[][];
 }
-
 export default interface IGameBoard {
   board: HTMLDivElement;
-  cells: IGameCell[][];
+  boardState: BoardState;
+  cells: IGameCell[];
   cellsInLine: CellsInLine;
   containerElement: HTMLElement;
-  generateCells: (size: CellsInLine) => IGameCell[][];
+  game: IGame;
+  genCells: (size: CellsInLine) => IGameCell[];
   handleBoardState: () => BoardState;
   handleMove: (event: MouseEvent) => void;
   render: () => void;
 }
-
 export type { BoardState };
