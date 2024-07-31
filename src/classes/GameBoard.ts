@@ -5,8 +5,6 @@ import IGame from '../interfaces/IGame';
 import IGameBoard, { BoardState } from '../interfaces/IGameBoard';
 import { RoundResult } from '../interfaces/IGame';
 
-export type PlayerCell = 'X' | 'O' | null;
-
 export default class GameBoard implements IGameBoard {
   static hasListenersOnButtons: boolean = false;
   static NEW_GAME_SELECTOR = '#new-game';
@@ -15,7 +13,9 @@ export default class GameBoard implements IGameBoard {
   public cells: GameCell[];
   public readonly board: HTMLDivElement = document.createElement('div');
   public boardState: BoardState = {
-    board: [],
+    rows: [],
+    columns: [],
+    diagonals: [[], []],
   };
 
   constructor(
@@ -34,7 +34,6 @@ export default class GameBoard implements IGameBoard {
     this.resizeBoardListener = this.resizeBoardListener.bind(this);
     this.init();
   }
-
   private removeListeners(): void {
     this.board.removeEventListener('click', this.handleMove);
     document
@@ -48,58 +47,48 @@ export default class GameBoard implements IGameBoard {
       ?.removeEventListener('submit', this.resizeBoardListener);
     window.removeEventListener('beforeunload', this.removeListeners);
   }
-
   destroy() {
     this.removeListeners();
   }
-
   public handleBoardState(): BoardState {
-    this.boardState.board = Array(this.cellsInLine)
-      .fill(null)
-      .map(() => Array(this.cellsInLine).fill(null));
-
-    for (let yCoord = 0; yCoord < this.cellsInLine; yCoord++) {
-      for (let xCoord = 0; xCoord < this.cellsInLine; xCoord++) {
-        this.boardState.board[yCoord][xCoord] = null;
-      }
-    }
-
-    console.log('Board State:', this.boardState);
-    return this.boardState;
-  }
-
-  private checkWinner(): boolean {
-    const checkLine = (line: PlayerCell[]): boolean => {
-      return line.every((cell) => cell !== null && cell === line[0]);
+    this.boardState = {
+      rows: [],
+      columns: [],
+      diagonals: [[], []],
     };
-
-    // Проверка строк (по вертикали)
-    for (let i = 0; i < this.cellsInLine; i++) {
-      const column: PlayerCell[] = this.boardState.board.map((row) => row[i]);
-      if (checkLine(column)) return true;
+    const shiftFactor: number =
+      this.cellsInLine === 3 ? 4 : this.cellsInLine === 4 ? 5 : 6;
+    for (let itemIdx = 0; itemIdx < this.cellsInLine; itemIdx++) {
+      [this.boardState.rows[+itemIdx], this.boardState.columns[+itemIdx]] = [
+        [],
+        [],
+      ];
     }
-
-    // Проверка столбцов (по горизонтали)
-    for (let i = 0; i < this.cellsInLine; i++) {
-      if (checkLine(this.boardState.board[i])) return true;
+    // Формирование строк и столбцов для проверки
+    for (let cellIdx in this.cells) {
+      // Наполнение массива строк
+      this.boardState.rows[this.cells[+cellIdx].yCoord].push(
+        this.cells[+cellIdx],
+      );
+      // Наполнение массива столбцов
+      this.boardState.columns[this.cells[+cellIdx].xCoord].push(
+        this.cells[+cellIdx],
+      );
     }
-
-    // Проверка диагоналей
-    // Основная диагональ
-    const mainDiagonal: PlayerCell[] = [];
-    for (let i = 0; i < this.cellsInLine; i++) {
-      mainDiagonal.push(this.boardState.board[i][i]);
+    /*
+     * Обе диагонали
+     */
+    for (
+      let diagonalIdx: number = 0,
+        revDiagonalIdx: number = this.cellsInLine - 1;
+      diagonalIdx < this.cells.length && revDiagonalIdx >= 0;
+      diagonalIdx = diagonalIdx + shiftFactor,
+        revDiagonalIdx = revDiagonalIdx + shiftFactor - 2
+    ) {
+      this.boardState.diagonals[0].push(this.cells[diagonalIdx]);
+      this.boardState.diagonals[1].push(this.cells[revDiagonalIdx]);
     }
-    if (checkLine(mainDiagonal)) return true;
-
-    // Вспомогательная диагональ
-    const secondDiagonal: PlayerCell[] = [];
-    for (let i = 0; i < this.cellsInLine; i++) {
-      secondDiagonal.push(this.boardState.board[i][this.cellsInLine - 1 - i]);
-    }
-    if (checkLine(secondDiagonal)) return true;
-
-    return false;
+    return this.boardState;
   }
 
   public genCells(cellsInLine: number): GameCell[] {
@@ -111,7 +100,6 @@ export default class GameBoard implements IGameBoard {
     }
     return cells;
   }
-
   public handleWin(winState: boolean | 'Draw' | RoundResult) {
     this.game.status.isRunning = !this.game.status.isRunning;
     if (winState == 'Draw') {
@@ -126,34 +114,10 @@ export default class GameBoard implements IGameBoard {
     }
     this.game.setStatistics();
   }
-
-  private printBoard(): void {
-    console.log(
-      this.boardState.board
-        .map((row) => row.map((cell) => cell || ' ').join('|'))
-        .join('\n'),
-    );
-  }
-
   public handleMove(event: MouseEvent): void {
     const cellIndex: number = Array.from(this.board?.childNodes ?? []).indexOf(
       event.target as HTMLElement,
     );
-
-    // Преобразование индекса в координаты (x, y)
-    const xCoord = cellIndex % this.cellsInLine;
-    const yCoord = Math.floor(cellIndex / this.cellsInLine);
-
-    // Проверка на недопустимый ход (вне границ доски)
-    if (
-      xCoord < 0 ||
-      xCoord >= this.cellsInLine ||
-      yCoord < 0 ||
-      yCoord >= this.cellsInLine
-    ) {
-      console.log('Недопустимый ход: вне границ доски');
-      return;
-    }
 
     if (this.cells[cellIndex].getStatus() !== CellStatus.empty) {
       return;
@@ -168,18 +132,17 @@ export default class GameBoard implements IGameBoard {
     );
 
     this.game.player = this.game.player === 'AI' ? 'Player' : 'AI';
-    const winState = this.checkWinner();
+    const winState = this.game.checkWin();
     if (winState) {
       this.handleWin(winState);
     } else if (this.game.status.isRunning && this.game.player === 'AI') {
       this.game.player = this.game.player === 'AI' ? 'Player' : 'AI';
       this.game.aiPlayer.move();
-      const updatedWinState = this.checkWinner();
+      const updatedWinState = this.game.checkWin();
       if (updatedWinState) {
         this.handleWin(updatedWinState);
       }
     }
-    this.printBoard();
   }
 
   public newGameListener(): void {

@@ -1,16 +1,12 @@
 import IGame, { CellsInLine } from './IGame';
 import IGameCell from './IGameCell';
 
-type PlayerCell = 'X' | 'O' | null;
-
 interface BoardState {
-  board: PlayerCell[][];
+  columns: IGameCell[][];
+  diagonals: IGameCell[][];
+  rows: IGameCell[][];
 }
-
 export default interface IGameBoard {
-  handleWin(
-    winState: string | boolean | import('./IGame').RoundResult,
-  ): unknown;
   board: HTMLDivElement;
   boardState: BoardState;
   cells: IGameCell[];
@@ -22,5 +18,4 @@ export default interface IGameBoard {
   handleMove: (event: MouseEvent) => void;
   render: () => void;
 }
-
 export type { BoardState };

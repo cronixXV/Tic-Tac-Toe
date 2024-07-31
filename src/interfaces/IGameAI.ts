@@ -8,7 +8,7 @@ export default interface IGameAI {
 }
 
 //данные о последовательности ячеек
-type SequenceAnalysis = {
+type SequenceStateMetaData = {
   suggestToHold: boolean;
   hasAiIn?: boolean;
   hasPlayerIn?: boolean;
@@ -16,8 +16,8 @@ type SequenceAnalysis = {
   movesPlayerToWin?: number;
 };
 //состояние последовательности ячеек.
-type SequenceData = {
-  metaData?: SequenceAnalysis;
+type SequinceState = {
+  metaData?: SequenceStateMetaData;
   seq?: {
     seqAiCells?: IGameCell[];
     seqEmptyCells?: IGameCell[];
@@ -25,17 +25,23 @@ type SequenceData = {
   };
 };
 //распределение ячеек на игровом поле.
-type BoardAnalysis = {
-  rowsState: SequenceData[];
-  columnsState: SequenceData[];
-  diagonalsState: SequenceData[];
+type Disposition = {
+  rowsState: SequinceState[];
+  columnsState: SequinceState[];
+  diagonalsState: SequinceState[];
 };
 
 //данные о лучшем ходе игрока.
-type BestMoveData = {
+type BestPlayersMoveData = {
   bestStepsCountToWinAI: number;
   bestSeqForAI: IGameCell[];
   bestStepsCountToWinPlayer: number;
   bestSeqForPlayer: IGameCell[];
 };
-export type { BoardAnalysis, SequenceData, SequenceAnalysis, BestMoveData };
+
+export type {
+  Disposition,
+  SequinceState,
+  SequenceStateMetaData,
+  BestPlayersMoveData,
+};

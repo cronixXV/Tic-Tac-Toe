@@ -1,6 +1,6 @@
 import IGameCell, { CellStatus } from '../interfaces/IGameCell';
 import IGame, { CellsInLine, Player, RoundResult } from '../interfaces/IGame';
-import GameBoard, { PlayerCell } from './GameBoard';
+import GameBoard from './GameBoard';
 import GameStatus from './GameStatus';
 import IGameBoard from '../interfaces/IGameBoard';
 import IGameStatus, { PlayerSym } from '../interfaces/IGameStatus';
@@ -12,8 +12,6 @@ export default class Game implements IGame {
   public player: Player | null = null;
   public readonly status: IGameStatus;
   public aiPlayer: IGameAI;
-  private currentPlayer: Player = 'Player';
-
   constructor(
     private readonly containerElement: HTMLElement,
     public cellsInLine: CellsInLine,
@@ -29,10 +27,6 @@ export default class Game implements IGame {
     this.firstMoveInRound();
   }
 
-  public isPlayer(): boolean {
-    return this.player === 'Player';
-  }
-
   public newGame(): void {
     this.gameBoard.containerElement.innerHTML = '';
     this.gameBoard.cells.forEach((cell) => {
@@ -43,32 +37,19 @@ export default class Game implements IGame {
       this.gameBoard.handleMove,
     );
     this.status.isRunning = true;
-    this.status.cleanStatistics(); // Сброс статистики
     this.gameBoard.render();
-    this.firstMoveInRound();
-  }
-
-  public handleMove(cell: IGameCell): void {
-    if (this.getCurrentPlayer() === this.player) {
-      cell.setStatus(CellStatus.holdX);
-      this.setCurrentPlayer('AI');
-      const result = this.checkWin();
-      if (result === false) {
-        console.log('AI should make a move now.');
-        this.aiPlayer.move();
-      } else {
-        this.handleGameResult(result);
-      }
+    if (this.player === 'AI') {
+      this.player = this.player === 'AI' ? 'Player' : 'AI';
+      this.aiPlayer.move();
+      this.gameBoard.handleBoardState();
     }
   }
-
   public resizeGameBoard(size: CellsInLine) {
     this.cellsInLine = size;
     this.gameBoard.cellsInLine = this.cellsInLine;
     this.gameBoard.cells = this.gameBoard.genCells(size);
     this.gameBoard.render();
   }
-
   public setStatistics() {
     const PLAYER_SELECTOR = '[data-player="player"] > .statistics__value';
     const AI_SELECTOR = '[data-player="AI"] > .statistics__value';
@@ -81,7 +62,6 @@ export default class Game implements IGame {
       aiStatElem.innerHTML = (this.status.aiWins as Number).toString();
     }
   }
-
   public resetStatistics(): void {
     const playerStatElem = document.querySelector(
       '[data-player="player"] > .statistics__value',
@@ -95,156 +75,59 @@ export default class Game implements IGame {
     (aiStatElem as HTMLElement).innerHTML = `${this.status.aiWins}`;
   }
 
-  private checkWinner(state: PlayerCell[][]): RoundResult | false {
+  private checkWinner(state: IGameCell[][]): RoundResult | false {
     for (let sequenceIdx in state) {
-      let checkValue = state[sequenceIdx][0];
-      const convertedCheckValue = this.convertToCellStatus(checkValue);
+      let checkValue = state[sequenceIdx][0].getStatus();
       if (
-        convertedCheckValue !== CellStatus.empty &&
-        state[sequenceIdx].every(
-          (cell) => this.convertToCellStatus(cell) === convertedCheckValue,
-        )
+        checkValue !== CellStatus.empty &&
+        state[sequenceIdx].every((cell) => cell.getStatus() === checkValue)
       ) {
-        const winCells: IGameCell[] = state[sequenceIdx].map((cell, index) => ({
-          domEl: document.createElement('div'), // Пример, замените на реальный элемент
-          xCoord: index,
-          yCoord: parseInt(sequenceIdx),
-          status: this.convertToCellStatus(cell),
-          getStatus: () => this.convertToCellStatus(cell),
-          setStatus: (newStatus: CellStatus) => {
-            // Логика установки статуса
-          },
-          resetStatus: () => {
-            // Логика сброса статуса
-          },
-        }));
         return {
-          winner:
-            this.status.playerSym === convertedCheckValue ? 'Player' : 'AI',
-          winCells: winCells,
+          winner: this.status.playerSym === checkValue ? 'Player' : 'AI',
+          winCells: state[sequenceIdx],
         };
       }
     }
     return false;
   }
 
-  private convertToCellStatus(cell: PlayerCell): CellStatus {
-    switch (cell) {
-      case 'X':
-        return CellStatus.holdX;
-      case 'O':
-        return CellStatus.holdO;
-      default:
-        return CellStatus.empty;
-    }
-  }
-
-  private hasCollectionsNotEmptySequences(state: PlayerCell[][]): boolean {
+  private hasCollectionsNotEmptySequences(state: IGameCell[][]): boolean {
     return state.some((cells) =>
-      cells.every(
-        (cell) => this.convertToCellStatus(cell) !== CellStatus.empty,
-      ),
+      cells.every((cell) => cell.getStatus() !== CellStatus.empty),
     );
   }
 
-  private checkHorizontal(board: PlayerCell[][]): RoundResult | false {
-    return this.checkWinner(board);
+  private checkHorizontal(state: IGameCell[][]): RoundResult | false {
+    const hasNoEmptyRows = this.hasCollectionsNotEmptySequences(state);
+    return hasNoEmptyRows ? this.checkWinner(state) : false;
   }
 
-  private checkVertical(board: PlayerCell[][]): RoundResult | false {
-    const columns: PlayerCell[][] = Array(board.length)
-      .fill(null)
-      .map(() => Array(board.length).fill(null));
-
-    for (let i = 0; i < board.length; i++) {
-      for (let j = 0; j < board.length; j++) {
-        columns[j][i] = board[i][j];
-      }
-    }
-
-    return this.checkWinner(columns);
+  private checkVertical(state: IGameCell[][]): RoundResult | false {
+    const hasNoEmptyColumns = this.hasCollectionsNotEmptySequences(state);
+    return hasNoEmptyColumns ? this.checkWinner(state) : false;
   }
 
-  private checkDiagonal(board: PlayerCell[][]): RoundResult | false {
-    const mainDiagonal: PlayerCell[] = [];
-    const antiDiagonal: PlayerCell[] = [];
-
-    for (let i = 0; i < board.length; i++) {
-      mainDiagonal.push(board[i][i]);
-      antiDiagonal.push(board[i][board.length - 1 - i]);
-    }
-
-    const diagonals: PlayerCell[][] = [mainDiagonal, antiDiagonal];
-    return this.checkWinner(diagonals);
+  private checkDiagonal(state: IGameCell[][]): RoundResult | false {
+    const hasNoEmptyDiagonals = this.hasCollectionsNotEmptySequences(state);
+    return hasNoEmptyDiagonals ? this.checkWinner(state) : false;
   }
 
-  private checkDraw(board: PlayerCell[][]): boolean | 'Draw' {
-    return this.hasCollectionsNotEmptySequences(board) ? 'Draw' : false;
+  private checkDraw(): boolean | 'Draw' {
+    return this.hasCollectionsNotEmptySequences([this.gameBoard.cells])
+      ? 'Draw'
+      : false;
   }
 
   public checkWin(): RoundResult | boolean | 'Draw' {
     const boardState = this.gameBoard.handleBoardState();
-    const board = boardState.board;
-
-    // Проверка строк
-    const winByRows = this.checkHorizontal(board);
-    if (winByRows) {
-      return winByRows;
-    }
-
-    // Проверка столбцов
-    const winByColumns = this.checkVertical(board);
-    if (winByColumns) {
-      return winByColumns;
-    }
-
-    // Проверка диагоналей
-    const winByDiagonals = this.checkDiagonal(board);
-    if (winByDiagonals) {
-      return winByDiagonals;
-    }
-
-    // Проверка на ничью
-    const isDraw = this.checkDraw(board);
-    if (isDraw) {
-      return 'Draw';
-    }
-
-    return false;
+    const winByRows = this.checkHorizontal(boardState.rows);
+    const winByColumns = this.checkVertical(boardState.columns);
+    const winByDiagonals = this.checkDiagonal(boardState.diagonals);
+    const isDraw = this.checkDraw();
+    return winByRows || winByColumns || winByDiagonals || isDraw;
   }
 
   public firstMoveInRound(): void {
     this.player = Math.random() < 0.5 ? 'AI' : 'Player';
-    console.log('Первый ход в раунде:', this.player);
-    this.currentPlayer = this.player;
-    if (this.player === 'AI') {
-      this.aiPlayer.move();
-    }
-  }
-
-  public handleGameResult(result: RoundResult | boolean | 'Draw'): void {
-    if (result === 'Draw') {
-      console.log('Draw!');
-      // Обработка ничьей
-    } else if (result && typeof result === 'object' && 'winner' in result) {
-      console.log(`${result.winner} wins!`);
-      // Обработка победы
-      if (result.winner === 'Player') {
-        this.status.playerWins++;
-      } else if (result.winner === 'AI') {
-        this.status.aiWins++;
-      }
-      this.setStatistics();
-    }
-    this.status.isRunning = false;
-    this.newGame(); // Начать новую игру
-  }
-
-  public getCurrentPlayer(): Player {
-    return this.currentPlayer;
-  }
-
-  public setCurrentPlayer(player: Player): void {
-    this.currentPlayer = player;
   }
 }

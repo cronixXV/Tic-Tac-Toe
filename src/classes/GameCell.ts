@@ -24,10 +24,6 @@ export default class GameCell implements IGameCell {
       this.status = sym;
       this.domEl.classList.add('hold', `hold-${this.status}`);
       this.domEl.textContent = this.status.toString();
-      console.log('Cell status set to:', this.status);
-      console.log('DOM element updated:', this.domEl);
-    } else {
-      console.log('Cell status is not empty, cannot set status:', this.status);
     }
   }
 

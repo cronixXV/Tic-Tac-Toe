@@ -4,6 +4,9 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const WorkboxWebpackPlugin = require('workbox-webpack-plugin');
 const ESLintWebpackPlugin = require('eslint-webpack-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+const WebpackBundleAnalyzer = require('webpack-bundle-analyzer')[
+  'BundleAnalyzerPlugin'
+];
 
 require('dotenv').config();
 
@@ -87,5 +90,8 @@ module.exports = () => {
     config.mode = 'development';
   }
 
+  if (process.env.ANALYZE) {
+    config.plugins.push(new WebpackBundleAnalyzer());
+  }
   return config;
 };
